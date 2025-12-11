@@ -1,4 +1,4 @@
-// utils/getTourById.ts
+
 import { supabase } from "@/utils/supabaseClient";
 
 interface TourStep {
