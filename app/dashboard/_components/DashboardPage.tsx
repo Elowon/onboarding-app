@@ -64,70 +64,70 @@ export default function ToursPage() {
     {},
   );
 
+  // ---------------- Fetch tours function ----------------
+  const fetchTours = async (currentUser: User) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("tours")
+        .select("*, steps(*)")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const formatted: Tour[] = (data as SupabaseTourRow[]).map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+        user_id: t.user_id,
+        steps: (t.steps || []).map((s: SupabaseStepRow) => ({
+          id: s.id,
+          title: s.title,
+          content: s.content,
+          order: s.order,
+        })),
+      }));
+
+      setTours(formatted);
+    } catch (err) {
+      console.error("Error fetching tours:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- Auth & initial fetch ----------------
   useEffect(() => {
     const init = async () => {
+      setLoading(true);
       const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user ?? null);
+      const currentUser = data.session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) await fetchTours(currentUser);
+      else setLoading(false);
     };
+
     init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_e, session) => {
-        setUser(session?.user ?? null);
-      },
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) fetchTours(currentUser);
+    });
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Fetch tours
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchTours = async () => {
-      try {
-        setLoading(true);
-
-        const { data, error } = await supabase
-          .from("tours")
-          .select("*, steps(*)")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const formatted: Tour[] = (data as SupabaseTourRow[]).map((t) => ({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          created_at: t.created_at,
-          updated_at: t.updated_at,
-          user_id: t.user_id,
-          steps: (t.steps || []).map((s: SupabaseStepRow) => ({
-            id: s.id,
-            title: s.title,
-            content: s.content,
-            order: s.order,
-          })),
-        }));
-
-        setTours(formatted);
-      } catch (err) {
-        console.error("Error fetching tours:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTours();
-  }, [user]);
-
-  // Add new tour
+  // ---------------- Add Tour ----------------
   const handleAddTour = async () => {
     if (!user || !newTourTitle.trim()) return;
 
     try {
-      setAddingTour(true); // start loading
+      setAddingTour(true);
 
       const { data: tour, error } = await supabase
         .from("tours")
@@ -150,7 +150,7 @@ export default function ToursPage() {
       console.error(err);
       alert("Failed to create tour");
     } finally {
-      setAddingTour(false); // stop loading
+      setAddingTour(false);
     }
   };
 
