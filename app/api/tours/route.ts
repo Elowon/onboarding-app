@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/utils/supabaseClient";
 
-// GET /api/tours  -> fetch all tours that belong to the user
+
 export async function GET() {
   const { data, error } = await supabase
     .from("tours")
@@ -15,7 +15,7 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-// POST /api/tours  -> create a new tour
+
 export async function POST(req: Request) {
   const body = await req.json();
 
