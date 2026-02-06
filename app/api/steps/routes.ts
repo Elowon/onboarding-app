@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/utils/supabaseClient";
 
-
+// GET /api/steps -> fetch all steps for all user's tours
 export async function GET() {
   const { data, error } = await supabase
-    .from("tours")
+    .from("steps")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("order", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
@@ -15,15 +15,15 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-
+// POST /api/steps -> create new step
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const { name, description } = body;
+  const { tour_id, title, description, order } = body;
 
   const { data, error } = await supabase
-    .from("tours")
-    .insert([{ name, description }])
+    .from("steps")
+    .insert([{ tour_id, title, description, order }])
     .select()
     .single();
 
